@@ -2,6 +2,7 @@ package com.newrelic.labs;
 
 import com.newrelic.api.agent.NewRelic;
 import com.newrelic.api.agent.Trace;
+import com.newrelic.api.agent.TransactionNamePriority;
 import com.newrelic.api.agent.weaver.MatchType;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
@@ -16,6 +17,7 @@ public abstract class FilteringWebHandler_Instrumentation {
 
     @Trace(dispatcher = true)
     public Mono<Void> handle(ServerWebExchange exchange) {
+
 
         try {
             final Pattern versionPattern = Pattern.compile("[vV][0-9]{1,}");
@@ -38,19 +40,23 @@ public abstract class FilteringWebHandler_Instrumentation {
                     } else if (codPattern.matcher(p).matches()) {
                         simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(codPattern.toString(), "{cod}"));
                     } else {
-                        simplifiedPath = simplifiedPath.concat("/").concat(p);
+                        if(!p.isEmpty())
+                            simplifiedPath = simplifiedPath.concat("/").concat(p);
                     }
                 }
             }
 
-            NewRelic.setTransactionName("Web", simplifiedPath);
+            NewRelic.setTransactionName("", simplifiedPath);
+            NewRelic.getAgent().getTransaction().convertToWebTransaction();
             NewRelic.getAgent().getLogger().log(Level.FINER,
                     "spring-cloud-gateway Instrumentation: Setting web transaction name to " + simplifiedPath);
         } catch (Exception e) {
             System.out.println("ERROR spring-cloud-gateway Instrumentation: " + e.getMessage());
         }
 
-        return Weaver.callOriginal();
+        Mono<Void> ret = Weaver.callOriginal();
+
+        return ret;
     }
 
 
