@@ -1,8 +1,8 @@
 package com.newrelic.labs;
 
 import com.newrelic.api.agent.NewRelic;
+import com.newrelic.api.agent.Token;
 import com.newrelic.api.agent.Trace;
-import com.newrelic.api.agent.TransactionNamePriority;
 import com.newrelic.api.agent.weaver.MatchType;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
@@ -15,10 +15,9 @@ import java.util.regex.Pattern;
 @Weave(type = MatchType.ExactClass, originalName = "org.springframework.cloud.gateway.handler.FilteringWebHandler")
 public abstract class FilteringWebHandler_Instrumentation {
 
-    @Trace(dispatcher = true)
+    @Trace(dispatcher = true, async = true)
     public Mono<Void> handle(ServerWebExchange exchange) {
-
-
+        Token token = NewRelic.getAgent().getTransaction().getToken();
         try {
             final Pattern versionPattern = Pattern.compile("[vV][0-9]{1,}");
             final Pattern idPattern = Pattern.compile("^(?=[^\\s]*?[0-9])[-{}().:_|0-9]+$");
@@ -33,30 +32,28 @@ public abstract class FilteringWebHandler_Instrumentation {
             if (splitPath.length > 0) {
                 simplifiedPath = "";
                 for (String p : splitPath) {
-                    if (versionPattern.matcher(p).matches()) {
-                        simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(versionPattern.toString(), "{version}"));
-                    } else if (idPattern.matcher(p).matches()) {
+                    if (idPattern.matcher(p).matches()) {
                         simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(idPattern.toString(), "{id}"));
-                    } else if (codPattern.matcher(p).matches()) {
+                    } else if (codPattern.matcher(p).matches() && !versionPattern.matcher(p).matches()) {
                         simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(codPattern.toString(), "{cod}"));
                     } else {
-                        if(!p.isEmpty())
-                            simplifiedPath = simplifiedPath.concat("/").concat(p);
+                        simplifiedPath = simplifiedPath.concat("/").concat(p);
                     }
                 }
             }
 
-            NewRelic.setTransactionName("", simplifiedPath);
-            NewRelic.getAgent().getTransaction().convertToWebTransaction();
+            if(simplifiedPath.startsWith("//"))
+                simplifiedPath = simplifiedPath.substring(2);
+
             NewRelic.getAgent().getLogger().log(Level.FINER,
                     "spring-cloud-gateway Instrumentation: Setting web transaction name to " + simplifiedPath);
         } catch (Exception e) {
             System.out.println("ERROR spring-cloud-gateway Instrumentation: " + e.getMessage());
         }
 
-        Mono<Void> ret = Weaver.callOriginal();
+        token.expire();
 
-        return ret;
+        return Weaver.callOriginal();
     }
 
 
