@@ -1,3 +1,10 @@
+# Changes made to Lib
+> Change the default newrelic.yml, disable all netty instrumentation
+> Adaptation of the webhandler filter to the needs of the mib-gateway
+> Troubleshooting all requests having the name NettyDispatcher
+> Solving the response time problem for reqeusts
+
+
 
 [![New Relic Experimental header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Experimental.png)](https://opensource.newrelic.com/oss-category/#new-relic-experimental)
 
