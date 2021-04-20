@@ -17,7 +17,6 @@ public abstract class FilteringWebHandler_Instrumentation {
 
     @Trace(dispatcher = true, async = true)
     public Mono<Void> handle(ServerWebExchange exchange) {
-        Token token = NewRelic.getAgent().getTransaction().getToken();
         try {
             final Pattern versionPattern = Pattern.compile("[vV][0-9]{1,}");
             final Pattern idPattern = Pattern.compile("^(?=[^\\s]*?[0-9])[-{}().:_|0-9]+$");
@@ -34,7 +33,9 @@ public abstract class FilteringWebHandler_Instrumentation {
                 for (String p : splitPath) {
                     if (idPattern.matcher(p).matches()) {
                         simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(idPattern.toString(), "{id}"));
-                    } else if (codPattern.matcher(p).matches() && !versionPattern.matcher(p).matches()) {
+                    } else if (versionPattern.matcher(p).matches()) {
+                        simplifiedPath = simplifiedPath.concat("/").concat(p);
+                    } else if (codPattern.matcher(p).matches()) {
                         simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(codPattern.toString(), "{cod}"));
                     } else {
                         simplifiedPath = simplifiedPath.concat("/").concat(p);
@@ -45,13 +46,13 @@ public abstract class FilteringWebHandler_Instrumentation {
             if(simplifiedPath.startsWith("//"))
                 simplifiedPath = simplifiedPath.substring(2);
 
+            NewRelic.setTransactionName("", simplifiedPath);
+
             NewRelic.getAgent().getLogger().log(Level.FINER,
                     "spring-cloud-gateway Instrumentation: Setting web transaction name to " + simplifiedPath);
         } catch (Exception e) {
             System.out.println("ERROR spring-cloud-gateway Instrumentation: " + e.getMessage());
         }
-
-        token.expire();
 
         return Weaver.callOriginal();
     }
