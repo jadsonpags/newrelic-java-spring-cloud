@@ -30,13 +30,12 @@ public abstract class GlobalFilter_Instrumentation {
 		final ServerHttpRequest originRequest = requestBuilder.build();
 		final ServerWebExchange outboundExchange = exchange.mutate().request(originRequest).build();
 
-
 		final Mono<Void> result = chain.filter(outboundExchange).then(Mono.fromRunnable(()->{
 			token.link();
 		}));
 
 		token.expire();
 
-		return result;
+		return Weaver.callOriginal();
 	}
 }

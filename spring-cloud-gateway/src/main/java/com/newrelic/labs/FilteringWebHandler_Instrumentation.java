@@ -6,6 +6,8 @@ import com.newrelic.api.agent.Trace;
 import com.newrelic.api.agent.weaver.MatchType;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -14,6 +16,8 @@ import java.util.regex.Pattern;
 
 @Weave(type = MatchType.ExactClass, originalName = "org.springframework.cloud.gateway.handler.FilteringWebHandler")
 public abstract class FilteringWebHandler_Instrumentation {
+
+    private Logger log = LoggerFactory.getLogger(FilteringWebHandler_Instrumentation.class);
 
     @Trace(dispatcher = true, async = true)
     public Mono<Void> handle(ServerWebExchange exchange) {
@@ -49,7 +53,7 @@ public abstract class FilteringWebHandler_Instrumentation {
             NewRelic.getAgent().getLogger().log(Level.FINER,
                     "spring-cloud-gateway Instrumentation: Setting web transaction name to " + simplifiedPath);
         } catch (Exception e) {
-            System.out.println("ERROR spring-cloud-gateway Instrumentation: " + e.getMessage());
+            log.error("ERROR spring-cloud-gateway Instrumentation: " + e.getMessage());
         }
 
         return Weaver.callOriginal();
