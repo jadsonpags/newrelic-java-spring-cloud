@@ -33,9 +33,7 @@ public abstract class FilteringWebHandler_Instrumentation {
                 for (String p : splitPath) {
                     if (idPattern.matcher(p).matches()) {
                         simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(idPattern.toString(), "{id}"));
-                    } else if (versionPattern.matcher(p).matches()) {
-                        simplifiedPath = simplifiedPath.concat("/").concat(p);
-                    } else if (codPattern.matcher(p).matches()) {
+                    } else if (codPattern.matcher(p).matches() && !versionPattern.matcher(p).matches()) {
                         simplifiedPath = simplifiedPath.concat("/").concat(p.replaceAll(codPattern.toString(), "{cod}"));
                     } else {
                         simplifiedPath = simplifiedPath.concat("/").concat(p);
